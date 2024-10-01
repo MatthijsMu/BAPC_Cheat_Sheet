@@ -1,0 +1,69 @@
+\documentclass[11pt]{amsart}
+% Very nice
+
+\usepackage[utf8]{inputenc}
+% This command makes sure LaTeX understands letters like ï. 
+
+\usepackage[english]{babel}
+% This command tells the system that you are writing in English, which
+% is important for the automated hyphenation to work properly.
+
+\usepackage[scale=.7]{geometry}
+% The standard LaTeX layout has quite big margins. This command
+% reduces them slightly. 
+
+\usepackage{graphicx}
+% This package provides the "\includegraphics"-command that is needed
+% to include jpg-pictures in LaTeX-documents.
+
+\usepackage{amsmath,amssymb,amsthm}
+% These three packages provide functionality for typing mathematics. 
+
+\usepackage{hyperref}
+% This packages creates links in the pdf-document. 
+
+\usepackage{enumitem}
+% For custom enumerate labels.
+
+% This is to redefine the paragraph to use bold face.
+\makeatletter
+\def\paragraph{\@startsection{paragraph}{4}%
+  \z@\z@{-\fontdimen2\font}%
+  {\normalfont\bfseries}}
+\makeatother
+
+\usepackage{pgffor}
+% Macro to define \calA, \calB, ..., \calZ
+\foreach \x in {A,...,Z}{%
+\expandafter\xdef\csname cal\x\endcsname{\noexpand\ensuremath{\noexpand\mathcal{\x}}}
+}
+
+\foreach \x in {A,...,Z}{%
+\expandafter\xdef\csname bb\x\endcsname{\noexpand\ensuremath{\noexpand\mathbb{\x}}}
+}
+
+\newcommand{\ra}{\rightarrow}
+\DeclareMathOperator{\Incl}{\textnormal{incl}}
+\DeclareMathOperator{\Id}{\textnormal{id}}
+\DeclareMathOperator{\Supp}{\textnormal{supp}}
+\DeclareMathOperator{\Proj}{\textnormal{pr}}
+\DeclareMathOperator{\Int}{\textnormal{int}}
+\DeclareMathOperator{\Cl}{\textnormal{cl}}
+
+% The title
+\title{Competivite Programming Cheat Sheet}
+
+% Our Teamname
+\author{Les Traversables}
+
+% Enter the date here, or "\today" if you want to have the date of the time of compilation. 
+\date{\today}
+\begin{document}
+
+\begin{abstract}
+    This document provides use cases and reference implementations for common competitive programming algorithms. 
+\end{abstract}
+
+\maketitle
+
+\end{document}
