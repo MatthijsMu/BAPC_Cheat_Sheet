@@ -25,6 +25,10 @@
 \usepackage{enumitem}
 % For custom enumerate labels.
 
+\usepackage{minted}
+\usemintedstyle{tango}
+% For code environments.
+
 % This is to redefine the paragraph to use bold face.
 \makeatletter
 \def\paragraph{\@startsection{paragraph}{4}%
@@ -65,5 +69,160 @@
 \end{abstract}
 
 \maketitle
+
+\section{Algorithms}
+
+\subsection{Longest Increasing Subsequence} Using DP and Binary Search: Given a total order $(P,<)$ and array $A\in P^N$ finds the maximum $l\in\bbN$ for which there are $i_1, \dots , i_l \in [N]$ such that $A[i_1] < \dots < A[i)l]$ in $O(N \log N)$ time.
+\begin{minted}{cpp}
+    int lis(vector<int> const& a) {
+    int n = a.size();
+    const int INF = 1e9;
+    vector<int> d(n+1, INF);
+    d[0] = -INF;
+
+    for (int i = 0; i < n; i++) {
+        int l = upper_bound(d.begin(), d.end(), a[i]) - d.begin();
+        if (d[l-1] < a[i] && a[i] < d[l])
+            d[l] = a[i];
+    }
+
+    int ans = 0;
+    for (int l = 0; l <= n; l++) {
+        if (d[l] < INF)
+            ans = l;
+    }
+    return ans;
+}
+\end{minted}
+
+
+\subsection{Strongly Connected Components} Let $G = (V,E)$ be a graph. Tarjan's algorithm labels nodes by their SCC in $O(|V|+|E|)$ time using a variant of DFS:
+\begin{enumerate}[label=(\roman*)]
+  \item Traverse the graph from each unvisited vertex in DFS order.
+  \item This creates a \emph{spanning forest} of the graph, and the SCCs are recovered as certain subtrees of this forest.
+  \item The roots of these subtrees are calles "SCC roots". Any node in an SCC might serve as its root, if it happens to be the first node of a component that is discovered during the DFS.
+  \item Nodes are placed on a stakc in the order in which they are visited. When the DFS has recursively visited $v$ and its descendants, nodes are not all popped from the stack once $v$ is finished; rather, a node remains on the stack if and only if there exists a path in $G$ from it to some node earlier on the stack (this is the stack invariant). In other words, it is only removed from the stack once all its connected paths have been traversed.
+  \item At the end of the call that visits $v$ and its descendants, we know whether $v$ itself has a path to any node earlier on the stack. If so, leave $v$ on the stack to preserve the invariant. If not they $v$ is the root of its strongly connected component, consisting of all nodes on the stack.
+\end{enumerate}
+To keep track of reachabilities, each node $v\in V$ is assigned:
+\begin{enumerate}[label=(\roman*)]
+  \item  An integer $\text{index}[v]$ which is the order of discovery in its DFS tree. 
+  \item An integer $\text{low}[v]$ which is the smallest index of any node in its DFS tree that is reachable from $v$.
+\end{enumerate}
+
+\begin{minted}{cpp}
+
+struct Graph {
+    // For representing the graph
+    vector<vector<size_t>> adj;
+
+    // For Tarjan's Algorithm
+    vector<size_t> scc;
+    size_t nr_scc = 0;
+    size_t id = 0;
+    stack<size_t> s;
+    vector<ll> low;
+    vector<ll> index;
+    unordered_set<size_t> onStack;    
+
+    Graph(vector<vector<size_t>>& adj) : adj{adj} {
+        low.assign(adj.size(), -1);
+        index.assign(adj.size(), -1);
+        scc.assign(adj.size(), 0);
+    }
+
+    void dfs(size_t v) {
+        index[v] = id;
+        low[v] = id++;
+        s.push(v);
+        onStack.emplace(v);
+
+        for (auto w : adj[v]) {
+            if (index[w] == -1) {
+                dfs(w);
+                low[v] = min(low[v], low[w]);
+            }
+            else if (in(w, onStack))
+                low[v] = min(low[v], index[w]);
+        }
+
+        if (low[v] == index[v]) {
+            size_t w;
+            do {
+                w = s.top();
+                scc[w] = nr_scc;
+                onStack.erase(w);
+                s.pop();
+            } while(w != v);
+            ++nr_scc;
+        }
+    }
+
+    void findSCC() {
+        for (size_t v = 0; v < adj.size(); ++v)
+            if (index[v] == -1)
+                dfs(v);
+    }
+};
+  
+\end{minted}
+
+
+\section{Data Structures}
+
+\subsection{Fenwick Tree}
+
+Let $(G,*,e)$ be a group and $A\in G^N$. A \textit{Fenwick Tree} 
+\begin{enumerate}[label=(\roman*)]
+  \item Calculates the value $\prod_{j=l}^r A_j$ in $O(\log N)$ time. Alternatively, for semigroups $(S,*)$ it can calculate only the values  $\prod_{j=1}^r A_j$. If you need arbitrary lower bounds $l$, use a Segment Tree.
+  \item Updates an element of $A$ in $O(\log N)$ time.
+  \item Requires $O(N)$ memory.
+\end{enumerate} 
+
+A Fenwick tree is just an array $T\in G^N$ and a fucntion $g: [N]\ra[N]$ such that for all $i \in [N]$,
+$T_i = \prod_{j=g(i)}^i A_j$. Here $g(i)$ is $i$ but with all trailing $1$ bits in the binary representation replaced with $0$ bits (for $i = 2^kp - 1$ where $p\not | 2$, it is $2^kp$), i.e. $g(i) = i \& (i+1)$. We can compute $\prod_{j=0}^r A_j$ as  $\left(\prod_{j=l}^{g(r)-1}A_j\right) * T_j$, which is tail recursive (\verb|sum| in code below) and $O(\log r)$.
+
+If we increase $A_i$ by $x$, we need to increase all $T_j$ for which $g(j) \leq i \leq j$. We find these by starting at $i$ and flip the last unset bit, i.e. the next index is $h(j) = j|(j+1)$.
+
+\begin{minted}{cpp}
+struct FenwickTree {
+    vector<int> T;  // binary indexed tree
+    int n;
+
+    FenwickTree(int n) {
+        this->n = n;
+        T.assign(n, 0);
+    } // O(n)
+
+    FenwickTree(vector<int> const &a) : FenwickTree(a.size()){
+        for (int i = 0; i < n; i++) {
+            bit[i] += a[i];
+            int r = i | (i + 1);
+            if (r < n) bit[r] += bit[i];
+        } 
+    } // O(a.size())
+
+    int sum(int r) {
+        int ret = 0;
+        for (; r >= 0; r = (r & (r + 1)) - 1)
+            ret += T[r];
+        return ret;
+    } // O(log r)
+
+    int sum(int l, int r) {
+        return sum(r) - sum(l - 1);
+    } // O(log r + log l)
+
+    void add(int idx, int delta) {
+        for (; idx < n; idx = idx | (idx + 1))
+            T[idx] += delta;
+    } // O(log idx)
+};
+
+\end{minted}
+
+\subsection{Segment Tree}
+
+Let $A\in S^N$ be an array for which we want to compute range queries ($\min, \max, \gcd, \text{lcm}, \text{mode}, \text{avg}$). This tree stores answers to these queries in segments, leading to $O(\log N)$ updates and $O(\log N)$ queries.
 
 \end{document}
